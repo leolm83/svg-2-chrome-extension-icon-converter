@@ -6,7 +6,14 @@
 
 Uma ferramenta web utilitária, minimalista e de alta performance voltada para desenvolvedores. Ela permite converter arquivos vetoriais **SVG** nos tamanhos exatos de ícones em formato **PNG** exigidos pela Google Chrome Web Store e pelo ecossistema de extensões (Manifest V3), empacotando tudo em um único arquivo `.ZIP`.
 
-Tudo funciona de forma **100% local** no lado do cliente (Client-Side), garantindo total privacidade e segurança para os seus assets de design.
+Todo o processamento é feito diretamente no navegador do usuário (Client-Side) utilizando recursos nativos.
+
+---
+
+## 🌐 Demonstração Online
+
+A ferramenta está hospedada e pronta para uso em:  
+👉 **[https://leolm83.github.io/svg-2-chrome-extension-icon-converter/](https://leolm83.github.io/svg-2-chrome-extension-icon-converter/)**
 
 ---
 
@@ -35,13 +42,19 @@ A ferramenta gera os quatro formatos essenciais recomendados pelo Google:
 
 ## 🛠️ Como Usar
 
-Por ser uma aplicação baseada inteiramente no navegador, o uso é extremamente simples:
+Você pode utilizar a ferramenta de duas formas:
 
+### Opção 1: Uso Online (Recomendado)
+1. Acesse a [versão web da ferramenta](https://leolm83.github.io/svg-2-chrome-extension-icon-converter/).
+
+### Opção 2: Uso Local
 1. Baixe ou copie o código do arquivo `index.html`.
 2. Dê um duplo clique no arquivo `index.html` para abri-lo em qualquer navegador moderno (Chrome, Edge, Firefox, Brave, Safari).
-3. Arraste seu arquivo `.svg` para a área demarcada ou clique nela para selecionar o arquivo.
-4. Visualize os resultados no grid quadriculado (que valida a transparência alpha do PNG).
-5. Clique em **"Baixar Todos (.ZIP)"** ou baixe os formatos individualmente através dos botões de cada card.
+
+### Passos na Interface:
+1. Arraste seu arquivo `.svg` para a área demarcada ou clique nela para selecionar o arquivo.
+2. Visualize os resultados no grid quadriculado (que valida a transparência alpha do PNG).
+3. Clique em **"Baixar Todos (.ZIP)"** ou baixe os formatos individualmente através dos botões de cada card.
 
 ---
 
