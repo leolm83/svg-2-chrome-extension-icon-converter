@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S2CE - SVG 2 Chrome Extension Icon Converter</title>
+    <!-- Importação do JSZip via CDN Seguro (Cloudflare) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+    <link rel="icon" type="image/svg+xml" href="icons/page-icon.svg">
+    <style>
+        :root {
+            --color-primary: #1a73e8;
+            --color-primary-hover: #1557b0;
+            --color-success: #1e8e3e;
+            --color-success-hover: #137333;
+            --color-bg-main: #f8f9fa;
+            --color-bg-card: #ffffff;
+            --color-border: #dadce0;
+            --color-text-main: #202124;
+            --color-text-muted: #5f6368;
+            --radius-md: 8px;
+            --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--color-bg-main);
+            color: var(--color-text-main);
+            line-height: 1.5;
+            padding: 2rem 1rem;
+        }
+
+        .app-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        /* Estilização do container do Logotipo */
+        .header__logo {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 1.25rem auto;
+            display: block;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--color-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--color-text-muted);
+        }
+
+        /* Componente Dropzone */
+        .dropzone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 3rem 2rem;
+            text-align: center;
+            background: var(--color-bg-card);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            outline: none;
+            min-height: 150px;
+        }
+
+        .dropzone:focus-within,
+        .dropzone--dragover {
+            border-color: var(--color-primary);
+            background-color: #f1f3f4;
+        }
+
+        .dropzone__input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        /* Área do Botão Master ZIP */
+        .actions-bar {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-zip {
+            max-width: 300px;
+            font-size: 1rem;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--color-success);
+        }
+
+        .btn-zip:hover {
+            background-color: var(--color-success-hover);
+        }
+
+        /* Grid & Cards Component */
+        .output-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+        }
+
+        .icon-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            transition: var(--transition-smooth);
+        }
+
+        .icon-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .icon-card__title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+        }
+
+        .icon-card__preview-wrapper {
+            width: 128px;
+            height: 128px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            background-color: #fff;
+            background-image: linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 12px 12px;
+            background-position: 0 0, 0 6px, 6px -6px, -6px 0px;
+            overflow: hidden;
+        }
+
+        .icon-card__preview {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .icon-card__preview--loaded {
+            opacity: 1;
+        }
+
+        /* Componente de Botão */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            transition: var(--transition-smooth);
+        }
+
+        .btn--primary {
+            background-color: var(--color-primary);
+        }
+
+        .btn--primary:hover {
+            background-color: var(--color-primary-hover);
+        }
+
+        .btn:disabled,
+        .btn--disabled {
+            background-color: #e8eaed !important;
+            color: #9aa0a6 !important;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <header class="header">
+            <!-- Ícone Minimalista Integrado de Forma Nativa (SVG Inline) -->
+            <div class="header__logo">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%">
+                    <defs>
+                        <linearGradient id="chromeBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#1a73e8" />
+                            <stop offset="100%" stop-color="#1557b0" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="2" y="2" width="20" height="20" rx="4" fill="#e8eaed" />
+                    <path d="M2 6h20M2 10h20M2 14h20M2 18h20M6 2v20M10 2v20M14 2v20M18 2v20" stroke="#ffffff"
+                        stroke-width="0.75" />
+                    <path d="M5 19C5 12 10 7 17 7" fill="none" stroke="url(#chromeBlue)" stroke-width="2.5"
+                        stroke-linecap="round" />
+                    <circle cx="5" cy="19" r="2" fill="#ffffff" stroke="url(#chromeBlue)" stroke-width="2" />
+                    <circle cx="17" cy="7" r="2" fill="#ffffff" stroke="url(#chromeBlue)" stroke-width="2" />
+                    <path d="M16 13h3a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z"
+                        fill="url(#chromeBlue)" />
+                    <circle cx="16" cy="15.5" r="1.25" fill="#e8eaed" />
+                </svg>
+            </div>
+            <h1>S2CE </h1>
+            <h2>SVG 2 Chrome Extension Icon Converter</h2>
+            <p>Converta arquivos SVG para o ecossistema padrão de ícones do Chrome de forma segura e local.</p>
+        </header>
+
+        <main>
+            <!-- Dropzone Acessível -->
+            <section>
+                <label for="file-input" class="dropzone" id="dropzone" role="button" tabindex="0"
+                    aria-label="Upload de arquivo SVG">
+                    <p>Arraste e solte o arquivo <strong>.svg</strong> aqui ou clique para navegar</p>
+                    <input type="file" id="file-input" class="dropzone__input" accept="image/svg+xml">
+                </label>
+            </section>
+
+            <!-- Botão Unificado para Download em ZIP -->
+            <div class="actions-bar">
+                <button id="btn-download-zip" class="btn btn-zip btn--disabled" disabled>Baixar Todos (.ZIP)</button>
+            </div>
+
+            <!-- Grid de Outputs -->
+            <section class="output-grid" aria-label="Ícones gerados">
+                <div class="icon-card" data-size="16">
+                    <span class="icon-card__title">16 x 16 px (Favicon)</span>
+                    <div class="icon-card__preview-wrapper">
+                        <img id="img-16" class="icon-card__preview" alt="Preview 16x16">
+                    </div>
+                    <a id="dl-16" class="btn btn--primary btn--disabled" aria-disabled="true">Download (icon16.png)</a>
+                </div>
+
+                <div class="icon-card" data-size="32">
+                    <span class="icon-card__title">32 x 32 px (Windows)</span>
+                    <div class="icon-card__preview-wrapper">
+                        <img id="img-32" class="icon-card__preview" alt="Preview 32x32">
+                    </div>
+                    <a id="dl-32" class="btn btn--primary btn--disabled" aria-disabled="true">Download (icon32.png)</a>
+                </div>
+
+                <div class="icon-card" data-size="48">
+                    <span class="icon-card__title">48 x 48 px (Extension Page)</span>
+                    <div class="icon-card__preview-wrapper">
+                        <img id="img-48" class="icon-card__preview" alt="Preview 48x48">
+                    </div>
+                    <a id="dl-48" class="btn btn--primary btn--disabled" aria-disabled="true">Download (icon48.png)</a>
+                </div>
+
+                <div class="icon-card" data-size="128">
+                    <span class="icon-card__title">128 x 128 px (Web Store)</span>
+                    <div class="icon-card__preview-wrapper">
+                        <img id="img-128" class="icon-card__preview" alt="Preview 128x128">
+                    </div>
+                    <a id="dl-128" class="btn btn--primary btn--disabled" aria-disabled="true">Download
+                        (icon128.png)</a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        class ImageConverterService {
+            static _loadImage(sourceUrl) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => resolve(img);
+                    img.onerror = () => reject(new Error("Falha ao carregar o arquivo SVG original."));
+                    img.src = sourceUrl;
+                });
+            }
+
+            static async convertSvgToPngGrid(svgUrl, sizes) {
+                const img = await this._loadImage(svgUrl);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d', { alpha: true });
+
+                if (!ctx) throw new Error("Contexto 2D indisponível.");
+
+                return sizes.map(size => {
+                    canvas.width = size;
+                    canvas.height = size;
+
+                    ctx.clearRect(0, 0, size, size);
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+
+                    ctx.drawImage(img, 0, 0, size, size);
+
+                    return {
+                        size,
+                        dataUrl: canvas.toDataURL('image/png')
+                    };
+                });
+            }
+        }
+
+        class AppController {
+            constructor() {
+                this.TARGET_SIZES = [16, 32, 48, 128];
+                this.dropzone = document.getElementById('dropzone');
+                this.fileInput = document.getElementById('file-input');
+                this.btnZip = document.getElementById('btn-download-zip');
+
+                this.generatedResults = null;
+
+                this._initEvents();
+            }
+
+            _initEvents() {
+                this.dropzone.addEventListener('dragover', (e) => this._handleDragOver(e));
+                this.dropzone.addEventListener('dragleave', () => this._handleDragLeave());
+                this.dropzone.addEventListener('drop', (e) => this._handleDrop(e));
+                this.fileInput.addEventListener('change', (e) => this._handleFileSelection(e));
+                this.btnZip.addEventListener('click', () => this._generateAndDownloadZip());
+
+                this.dropzone.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.fileInput.click();
+                    }
+                });
+            }
+
+            _handleDragOver(e) {
+                e.preventDefault();
+                this.dropzone.classList.add('dropzone--dragover');
+            }
+
+            _handleDragLeave() {
+                this.dropzone.classList.remove('dropzone--dragover');
+            }
+
+            _handleDrop(e) {
+                e.preventDefault();
+                this.dropzone.classList.remove('dropzone--dragover');
+
+                const file = e.dataTransfer.files[0];
+                if (file) this._processFile(file);
+            }
+
+            _handleFileSelection(e) {
+                const file = e.target.files[0];
+                if (file) this._processFile(file);
+            }
+
+            async _processFile(file) {
+                if (file.type !== 'image/svg+xml') {
+                    alert('Erro: Apenas arquivos no formato .SVG são suportados.');
+                    return;
+                }
+
+                const svgUrl = URL.createObjectURL(file);
+
+                try {
+                    this.generatedResults = await ImageConverterService.convertSvgToPngGrid(svgUrl, this.TARGET_SIZES);
+                    this._renderOutputs(this.generatedResults);
+
+                    this.btnZip.removeAttribute('disabled');
+                    this.btnZip.classList.remove('btn--disabled');
+                } catch (error) {
+                    console.error("[AppController Error]", error);
+                    alert('Houve um erro interno ao renderizar o seu arquivo.');
+                } finally {
+                    URL.revokeObjectURL(svgUrl);
+                }
+            }
+
+            _renderOutputs(results) {
+                results.forEach(({ size, dataUrl }) => {
+                    const imgEl = document.getElementById(`img-${size}`);
+                    const btnDl = document.getElementById(`dl-${size}`);
+
+                    if (imgEl && btnDl) {
+                        imgEl.src = dataUrl;
+                        imgEl.classList.add('icon-card__preview--loaded');
+
+                        btnDl.href = dataUrl;
+                        btnDl.download = `icon${size}.png`;
+                        btnDl.classList.remove('btn--disabled');
+                        btnDl.removeAttribute('aria-disabled');
+                    }
+                });
+            }
+
+            async _generateAndDownloadZip() {
+                if (!this.generatedResults) return;
+
+                const zip = new JSZip();
+
+                this.generatedResults.forEach(({ size, dataUrl }) => {
+                    const base64Data = dataUrl.split(',')[1];
+                    zip.file(`icon${size}.png`, base64Data, { base64: true });
+                });
+
+                try {
+                    const blobContent = await zip.generateAsync({ type: "blob" });
+                    const zipUrl = URL.createObjectURL(blobContent);
+                    const a = document.createElement('a');
+                    a.href = zipUrl;
+                    a.download = 'chrome-extension-icons.zip';
+                    document.body.appendChild(a);
+                    a.click();
+
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(zipUrl);
+                } catch (err) {
+                    console.error("Erro ao gerar ZIP", err);
+                    alert("Não foi possível gerar o arquivo compactado.");
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new AppController();
+        });
+    </script>
+
+</body>
+
+</html>
